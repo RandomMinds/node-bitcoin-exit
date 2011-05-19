@@ -1,0 +1,31 @@
+#
+# Upstart script for the BitcoinJS Exit Node
+#
+# IMPORTANT: Make sure you enter the correct paths for Node.js and
+#            node-bitcoin-exit below.
+#
+# Installation:
+#
+#   sudo cp docs/samples/upstart /etc/init/bitcoin-exit.conf
+#
+#
+# Usage:
+#
+#   start bitcoin-exit
+#
+# and
+#
+#   stop bitcoin-exit
+#
+
+description "bitcoin exit node"
+author      "Stefan Thomas <justmoon@members.fsf.org>"
+
+start on startup
+stop on shutdown
+
+script
+    export NODE_ENV="production"
+
+    exec sudo -u nobody /usr/local/bin/node /var/www/node-bitcoin-exit/server.js 2>&1 >> /var/log/bitcoin-exit.log
+end script
