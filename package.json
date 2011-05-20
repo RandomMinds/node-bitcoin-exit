@@ -1,5 +1,5 @@
 {
-	"exit": "bitcoin-exit",
+	"name": "bitcoin-exit",
 	"version": "0.0.1",
 	"description": "Node.js server enabling public access to Bitcoin network information",
 
