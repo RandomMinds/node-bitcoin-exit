@@ -1,0 +1,28 @@
+#
+# monitrc configuration for node-bitcoin-exit
+#
+# This should be added to the monitrc on the same server that is running
+# the exit node.
+#
+# The configuration assumes that you have upstart installed and the
+# example upstart script for node-bitcoin-exit set up.
+#
+# Make sure you go through an change things like the port and paths if
+# your configuration deviates from the defaults.
+#
+
+check process bitcoin-exit with pidfile /var/run/bitcoin-exit.pid
+  group bitcoinjs
+  start program = "/sbin/start bitcoin-exit"
+  stop  program = "/sbin/stop bitcoin-exit"
+  if failed host localhost port 3125
+      protocol HTTP request "/" then restart
+  if 5 restarts within 5 cycles then timeout
+  depends on bitcoin-exit_upstart
+
+check file bitcoin-exit_upstart with path /etc/init/bitcoin-exit.conf
+  group bitcoinjs
+  if failed checksum then unmonitor
+  if failed permission 644 then unmonitor
+  if failed uid root then unmonitor
+  if failed gid root then unmonitor
