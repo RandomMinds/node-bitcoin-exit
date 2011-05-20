@@ -1,0 +1,12 @@
+{
+	"exit": "bitcoin-exit",
+	"version": "0.0.1",
+	"description": "Node.js server enabling public access to Bitcoin network information",
+
+	"dependencies": {
+		"bitcoin-p2p": ">=0.0.3",
+		"node-uuid": ">=1.1.0",
+		"socket.io": ">=0.6.18",
+		"express": ">=2.3.6"
+	}
+}
