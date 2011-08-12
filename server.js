@@ -1,14 +1,13 @@
 var bitcoin = require('bitcoin-p2p');
 var express = require('express');
-var io = require('socket.io');
 var Pubkeys = require('./pubkeys').Pubkeys;
 var Tx = require('./tx').Tx;
 var Block = require('./block').Block;
 var RealtimeAPI = require('./realtime').API;
 
-var node = new bitcoin.Node();
-node.cfg.network.bootstrap = [];
-node.addPeer('localhost');
+var createNode = require('../node-bitcoin-p2p/daemon/init').createNode;
+
+var node = createNode({ welcome: true });
 node.start();
 
 var app = express.createServer();
@@ -50,6 +49,6 @@ blockModule.attach(app, '/block/');
 
 app.listen(3125);
 
-var socket = io.listen(app);
-var realtimeApi = new RealtimeAPI(socket, node, pubkeysModule, txModule, blockModule);
+var io = require('socket.io').listen(app);
+var realtimeApi = new RealtimeAPI(io, node, pubkeysModule, txModule, blockModule);
 

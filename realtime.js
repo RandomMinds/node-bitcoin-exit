@@ -1,11 +1,11 @@
-var RealtimeAPI = exports.API = function (socket, node, pubkeysModule, txModule, blockModule) {
-	this.socket = socket;
+var RealtimeAPI = exports.API = function (io, node, pubkeysModule, txModule, blockModule) {
+	this.io = io;
 	this.node = node;
 	this.pubkeysModule = pubkeysModule;
 	this.txModule = txModule;
 	this.blockModule = blockModule;
 
-	socket.on('connection', (function (client) {
+	io.sockets.on('connection', (function (client) {
 		client.on('message', (function (data) {
 			data = JSON.parse(data);
 			console.log("<<<", data);
@@ -19,6 +19,7 @@ var RealtimeAPI = exports.API = function (socket, node, pubkeysModule, txModule,
 			case "pubkeysRegister":
 			case "pubkeysListen":
 			case "pubkeysUnconfirmed":
+			case "txSend":
 				this[data.method](client, data.params[0], defaultCallback);
 				break;
 			default:
@@ -29,7 +30,7 @@ var RealtimeAPI = exports.API = function (socket, node, pubkeysModule, txModule,
 
 	var blockChain = node.getBlockChain();
 	blockChain.addListener('blockAdd', (function (e) {
-		this.sendBroadcast(socket, "blockAdd", {
+		this.sendBroadcast("blockAdd", {
 			top: e.block.hash.toString('base64'),
 			height: +e.block.height
 		});
@@ -42,7 +43,6 @@ RealtimeAPI.prototype.pubkeysRegister = function (client, params, callback) {
 
 RealtimeAPI.prototype.pubkeysListen = function (client, params, callback) {
 	var self = this;
-	var acc = this.node.getAccounting();
 	var txs = this.node.getTxStore();
 
 	if (client.pubkeysListening) {
@@ -87,6 +87,7 @@ RealtimeAPI.prototype.pubkeysListen = function (client, params, callback) {
 			// Remove those listeners when the user disconnects
 			client.on('disconnect', function () {
 				data.removeListener('txAdd', handleTxAdd);
+			  data.removeListener('txRevoke', handleTxRevoke);
 				data.accounts.forEach(function (account) {
 					var pubKeyHash = account.pubKeyHash.toString('base64');
 					txs.removeListener('txNotify:'+pubKeyHash, handleTxNotify);
@@ -99,6 +100,10 @@ RealtimeAPI.prototype.pubkeysListen = function (client, params, callback) {
 
 RealtimeAPI.prototype.pubkeysUnconfirmed = function (client, params, callback) {
 	this.pubkeysModule.getunconfirmedtxs(params, callback);
+};
+
+RealtimeAPI.prototype.txSend = function (client, params, callback) {
+	this.txModule.send(params, callback);
 };
 
 RealtimeAPI.prototype.handleTxAdd = function (client, e) {
@@ -133,7 +138,7 @@ RealtimeAPI.prototype.sendResult = function (client, result, id) {
 		"id": id
 	};
 	console.log(">>>", msg);
-	client.send(JSON.stringify(msg));
+	client.json.send(msg);
 };
 RealtimeAPI.prototype.sendRequest = function (client, method, paramObj, callback) {
 	var msg = {
@@ -150,10 +155,10 @@ RealtimeAPI.prototype.sendRequest = function (client, method, paramObj, callback
 	}
 
 	console.log('<<<', msg);
-	client.send(JSON.stringify(msg));
+	client.json.send(msg);
 };
 var unique = 1;
-RealtimeAPI.prototype.sendBroadcast = function (socket, method, paramObj, callback) {
+RealtimeAPI.prototype.sendBroadcast = function (method, paramObj, callback) {
 	var msg = {
 		"method": method,
 		"params": [paramObj],
@@ -168,5 +173,5 @@ RealtimeAPI.prototype.sendBroadcast = function (socket, method, paramObj, callba
 	}
 
 	console.log('<<< (BC)', msg);
-	socket.broadcast(JSON.stringify(msg));
+	this.io.sockets.json.send(msg);
 };
