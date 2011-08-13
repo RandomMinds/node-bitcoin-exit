@@ -132,6 +132,13 @@ Pubkeys.method('register', {
 
           Step(
             function loadBlockMetainfo() {
+              // If there are no transactions, skip this step. This is
+              // needed because Step hangs if no this.parallel() is called.
+              if (!txs.length) {
+                this(null);
+                return;
+              }
+
               var parallel = this.parallel;
               txs.forEach(function (tx) {
                 storage.Block.findOne({txs: tx.hash, active: 1}, parallel());
