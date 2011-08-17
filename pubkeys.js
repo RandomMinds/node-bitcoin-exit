@@ -42,17 +42,27 @@ Pubkeys.method('echo', {
 });
 
 function addTxToChain(data, e) {
-  var lastEntry = data.chain[data.chain.length-1];
-  var prevHash = new Buffer(lastEntry.chainHash, 'base64');
-  var chainHash = Util.sha256(prevHash.concat(e.tx.hash));
-  var chainTx = {
-    hash: e.tx.hash.toString('base64'),
-    chainHash: chainHash.toString('base64'),
-    height: e.block.height
-  };
-  data.chain.push(chainTx);
+  try {
+    var chainHash;
+    if (data.chain.length) {
+      var lastEntry = data.chain[data.chain.length-1];
+      var prevHash = new Buffer(lastEntry.chainHash, 'base64');
+      chainHash = Util.sha256(prevHash.concat(e.tx.hash));
+    } else {
+      chainHash = e.tx.hash;
+    }
+    var chainTx = {
+      hash: e.tx.hash,
+      chainHash: chainHash,
+      height: e.block.height,
+      index: e.tx.index
+    };
+    data.chain.push(chainTx);
 
-  data.emit('txAdd', {data: data, tx: e.tx, chainTx: chainTx, block: e.block});
+    data.emit('txAdd', {data: data, tx: e.tx, chainTx: chainTx, block: e.block});
+  } catch (err) {
+    console.log("addTxToChain Error: "+err);
+  }
 };
 
 function revokeTxFromChain(data, e) {
@@ -183,25 +193,20 @@ Pubkeys.method('register', {
                 // Add first tx
                 if (i == 0) {
                   chainHash = curHash;
-                  data.chain.push({
-                    hash: curHash,
-                    chainHash: chainHash,
-                    height: txs[i].height,
-                    index: txs[i].index
-                  });
+
                   // Add only unique txs
                   // (we only need to check against the last one as they are sorted)
                 } else if (lastHash.compare(curHash) != 0) {
                   chainHash = Util.sha256(chainHash.concat(curHash));
-                  data.chain.push({
-                    hash: txs[i].tx.hash,
-                    chainHash: chainHash,
-                    height: txs[i].height,
-                    index: txs[i].index
-                  });
                 } else {
                   continue;
                 }
+                data.chain.push({
+                  hash: curHash,
+                  chainHash: chainHash,
+                  height: txs[i].height,
+                  index: txs[i].index
+                });
                 lastHash = curHash;
               }
 
