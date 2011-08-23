@@ -32,6 +32,10 @@ app.configure('production', function(){
 	app.use(express.errorHandler());
 });
 
+app.get('/', function(req, res){
+  res.send('This is a BitcoinJS exit node. Source code available at <a href="https://github.com/bitcoinjs/node-bitcoin-exit">https://github.com/bitcoinjs/node-bitcoin-exit</a>.');
+});
+
 var pubkeysModule = new Pubkeys({
 	node: node
 });
